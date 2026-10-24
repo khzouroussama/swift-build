@@ -541,6 +541,11 @@ public extension PropertyListItem {
     /// Convert the receiver to an array of bytes.
     /// - parameter format: The format to which to convert the property list.  Note that Foundation no longer supports writing the OpenStep format.
     func asBytes(_ format: PropertyListSerialization.PropertyListFormat) throws -> [UInt8] {
+        #if !canImport(Darwin)
+        if format == .binary, !containsOpaqueItems {
+            return BinaryPropertyListWriter.data(self)
+        }
+        #endif
         // Convert the property list to an NSData.
         let plist = self.unsafePropertyList
         let data = try PropertyListSerialization.swb_stableData(fromPropertyList: plist, format: format, options: 0 /* no options */)
@@ -1017,5 +1022,16 @@ extension PropertyListSerialization {
         // Convert the input property list to something which will have a stable representation when serialized.
         return try data(fromPropertyList: GetStableValueReplacement(plist, memoTable), format: format, options: options)
         #endif
+    }
+}
+
+extension PropertyListItem {
+    fileprivate var containsOpaqueItems: Bool {
+        switch self {
+        case .plOpaque: return true
+        case .plArray(let items): return items.contains { $0.containsOpaqueItems }
+        case .plDict(let items): return items.values.contains { $0.containsOpaqueItems }
+        default: return false
+        }
     }
 }

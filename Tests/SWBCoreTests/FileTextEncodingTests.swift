@@ -50,6 +50,24 @@ import SWBTestSupport
         #expect(FileTextEncoding(stringEncoding: String.Encoding.init(rawValue: 0)) == nil)
     }
 
+    /// The encodings detected without one specified, the same on every platform.
+    @Test
+    func detection() throws {
+        func detect(_ bytes: [UInt8]) -> (String, FileTextEncoding)? {
+            FileTextEncoding.string(from: bytes, encoding: nil).map { ($0.string, $0.originalEncoding) }
+        }
+        #expect(detect([0x41])?.0 == "A")
+        #expect(detect([0x41])?.1 == .utf8)
+        #expect(detect([0xC3, 0xA9])?.0 == "\u{E9}")
+        #expect(detect([0xC3, 0xA9])?.1 == .utf8)
+        #expect(detect([0xEF, 0xBB, 0xBF, 0x41])?.0 == "A")
+        #expect(detect([0xEF, 0xBB, 0xBF, 0x41])?.1 == .utf8)
+        #expect(detect([0xFF, 0xFE, 0x41, 0x00])?.0 == "A")
+        #expect(detect([0xFF, 0xFE, 0x41, 0x00])?.1 == .utf16)
+        #expect(detect([0xFE, 0xFF, 0x00, 0x41])?.0 == "A")
+        #expect(detect([0xFE, 0xFF, 0x00, 0x41])?.1 == .utf16)
+    }
+
     @Test
     func BOMBytes() {
         #expect(FileTextEncoding.utf8.byteOrderMark == [0xEF, 0xBB, 0xBF])

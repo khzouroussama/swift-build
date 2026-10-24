@@ -82,6 +82,18 @@ public extension FileTextEncoding {
             // Always detect ASCII as UTF-8, because we want to prefer Unicode encodings
             return (convertedString, stringEncoding == .ascii ? FileTextEncoding.utf8 : discoveredEncoding)
         }
+        #else
+        // Without Foundation's detection, the Unicode encodings it detects in these files: a UTF-8
+        // or UTF-16 byte order mark, which is not part of the text, else valid UTF-8.
+        if bytes.starts(with: FileTextEncoding.utf8.byteOrderMark) {
+            return String(bytes.dropFirst(FileTextEncoding.utf8.byteOrderMark.count), encoding: .utf8).map { ($0, .utf8) }
+        }
+        for encoding in [FileTextEncoding.utf16be, .utf16le] where bytes.starts(with: encoding.byteOrderMark) {
+            return String(bytes.dropFirst(encoding.byteOrderMark.count), encoding: encoding).map { ($0, .utf16) }
+        }
+        if let string = String(validating: bytes, as: Unicode.UTF8.self) {
+            return (string, .utf8)
+        }
         #endif
 
         return nil

@@ -39,10 +39,16 @@ import SWBTestSupport
         #expect(thirdSignature == third.signature)
     }
 
-    /// Check against a known hash value.
-    @Test(.requireHostOS(.macOS, .windows))
+    /// Check against known hash values (RFC 1321's test suite), on every platform.
+    @Test
     func value() {
         #expect(InsecureHashContext().signature == "d41d8cd98f00b204e9800998ecf8427e")
+        let abc = InsecureHashContext()
+        abc.add(string: "abc")
+        #expect(abc.signature == "900150983cd24fb0d6963f7d28e17f72")
+        let long = InsecureHashContext()
+        long.add(string: String(repeating: "1234567890", count: 8))
+        #expect(long.signature == "57edf4a22be3c955ac49da2e2107b67a")
     }
 
     @Test
@@ -54,7 +60,7 @@ import SWBTestSupport
         #expect(first.signature == second.signature)
     }
 
-    @Test(.requireHostOS(.macOS, .windows))
+    @Test
     func numbers() {
         do {
             let ctx = InsecureHashContext()

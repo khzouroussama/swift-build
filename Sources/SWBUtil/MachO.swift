@@ -474,10 +474,10 @@ fileprivate let MH_MAGIC: UInt32 = 0xfeedface
 fileprivate let MH_CIGAM: UInt32 = 0xcefaedfe
 fileprivate let MH_MAGIC_64: UInt32 = 0xfeedfacf
 fileprivate let MH_CIGAM_64: UInt32 = 0xcffaedfe
-fileprivate let MH_OBJECT: UInt32 = 0x1
-fileprivate let MH_EXECUTE: UInt32 = 0x2
-fileprivate let MH_DYLIB: UInt32 = 0x6
-fileprivate let MH_BUNDLE: UInt32 = 0x8
+fileprivate let MH_OBJECT: Int32 = 0x1
+fileprivate let MH_EXECUTE: Int32 = 0x2
+fileprivate let MH_DYLIB: Int32 = 0x6
+fileprivate let MH_BUNDLE: Int32 = 0x8
 fileprivate let SYMDEF = "__.SYMDEF"
 fileprivate let SYMDEF_SORTED = "__.SYMDEF SORTED"
 fileprivate let SYMDEF_64 = "__.SYMDEF_64"
@@ -486,6 +486,214 @@ public typealias cpu_type_t = Int32
 public typealias cpu_subtype_t = Int32
 public typealias vm_prot_t = Int32
 public let CPU_TYPE_ANY: Int32 = -1
+fileprivate let CPU_TYPE_X86: Int32 = 7
+fileprivate let CPU_TYPE_X86_64: Int32 = 0x0100_0007
+fileprivate let CPU_TYPE_ARM64: Int32 = 0x0100_000c
+
+// The Mach-O load commands and structures this file reads, with the names and types Darwin's
+// MachO module imports them with (<mach-o/loader.h>, <mach-o/fat.h>), for the platforms that
+// have no MachO module.
+fileprivate let LC_SEGMENT: Int32 = 0x1
+fileprivate let LC_LOAD_DYLIB: Int32 = 0xc
+fileprivate let LC_ID_DYLIB: Int32 = 0xd
+fileprivate let LC_SEGMENT_64: Int32 = 0x19
+fileprivate let LC_UUID: Int32 = 0x1b
+fileprivate let LC_LAZY_LOAD_DYLIB: Int32 = 0x20
+fileprivate let LC_VERSION_MIN_MACOSX: Int32 = 0x24
+fileprivate let LC_VERSION_MIN_IPHONEOS: Int32 = 0x25
+fileprivate let LC_VERSION_MIN_TVOS: Int32 = 0x2f
+fileprivate let LC_VERSION_MIN_WATCHOS: Int32 = 0x30
+fileprivate let LC_BUILD_VERSION: Int32 = 0x32
+fileprivate let LC_LOAD_WEAK_DYLIB: UInt32 = 0x8000_0018
+fileprivate let LC_RPATH: UInt32 = 0x8000_001c
+fileprivate let LC_REEXPORT_DYLIB: UInt32 = 0x8000_001f
+fileprivate let LC_LOAD_UPWARD_DYLIB: UInt32 = 0x8000_0023
+
+public typealias MachOName = (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar)
+
+public struct fat_header: Sendable {
+    public var magic: UInt32 = 0
+    public var nfat_arch: UInt32 = 0
+
+    public init() {}
+}
+
+public struct fat_arch: Sendable {
+    public var cputype: cpu_type_t = 0
+    public var cpusubtype: cpu_subtype_t = 0
+    public var offset: UInt32 = 0
+    public var size: UInt32 = 0
+    public var align: UInt32 = 0
+
+    public init() {}
+}
+
+public struct fat_arch_64: Sendable {
+    public var cputype: cpu_type_t = 0
+    public var cpusubtype: cpu_subtype_t = 0
+    public var offset: UInt64 = 0
+    public var size: UInt64 = 0
+    public var align: UInt32 = 0
+    public var reserved: UInt32 = 0
+
+    public init() {}
+}
+
+public struct mach_header: Sendable {
+    public var magic: UInt32 = 0
+    public var cputype: cpu_type_t = 0
+    public var cpusubtype: cpu_subtype_t = 0
+    public var filetype: UInt32 = 0
+    public var ncmds: UInt32 = 0
+    public var sizeofcmds: UInt32 = 0
+    public var flags: UInt32 = 0
+
+    public init() {}
+}
+
+public struct mach_header_64: Sendable {
+    public var magic: UInt32 = 0
+    public var cputype: cpu_type_t = 0
+    public var cpusubtype: cpu_subtype_t = 0
+    public var filetype: UInt32 = 0
+    public var ncmds: UInt32 = 0
+    public var sizeofcmds: UInt32 = 0
+    public var flags: UInt32 = 0
+    public var reserved: UInt32 = 0
+
+    public init() {}
+}
+
+public struct load_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+
+    public init() {}
+}
+
+public struct segment_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var segname: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var vmaddr: UInt32 = 0
+    public var vmsize: UInt32 = 0
+    public var fileoff: UInt32 = 0
+    public var filesize: UInt32 = 0
+    public var maxprot: vm_prot_t = 0
+    public var initprot: vm_prot_t = 0
+    public var nsects: UInt32 = 0
+    public var flags: UInt32 = 0
+
+    public init() {}
+}
+
+public struct segment_command_64: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var segname: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var vmaddr: UInt64 = 0
+    public var vmsize: UInt64 = 0
+    public var fileoff: UInt64 = 0
+    public var filesize: UInt64 = 0
+    public var maxprot: vm_prot_t = 0
+    public var initprot: vm_prot_t = 0
+    public var nsects: UInt32 = 0
+    public var flags: UInt32 = 0
+
+    public init() {}
+}
+
+public struct section: Sendable {
+    public var sectname: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var segname: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var addr: UInt32 = 0
+    public var size: UInt32 = 0
+    public var offset: UInt32 = 0
+    public var align: UInt32 = 0
+    public var reloff: UInt32 = 0
+    public var nreloc: UInt32 = 0
+    public var flags: UInt32 = 0
+    public var reserved1: UInt32 = 0
+    public var reserved2: UInt32 = 0
+
+    public init() {}
+}
+
+public struct section_64: Sendable {
+    public var sectname: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var segname: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var addr: UInt64 = 0
+    public var size: UInt64 = 0
+    public var offset: UInt32 = 0
+    public var align: UInt32 = 0
+    public var reloff: UInt32 = 0
+    public var nreloc: UInt32 = 0
+    public var flags: UInt32 = 0
+    public var reserved1: UInt32 = 0
+    public var reserved2: UInt32 = 0
+    public var reserved3: UInt32 = 0
+
+    public init() {}
+}
+
+public struct lc_str: Sendable {
+    public var offset: UInt32 = 0
+
+    public init() {}
+}
+
+public struct dylib: Sendable {
+    public var name: lc_str = .init()
+    public var timestamp: UInt32 = 0
+    public var current_version: UInt32 = 0
+    public var compatibility_version: UInt32 = 0
+
+    public init() {}
+}
+
+public struct dylib_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var dylib: dylib = .init()
+
+    public init() {}
+}
+
+public struct rpath_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var path: lc_str = .init()
+
+    public init() {}
+}
+
+public struct uuid_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var uuid: (UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8, UInt8) = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+
+    public init() {}
+}
+
+public struct build_version_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var platform: UInt32 = 0
+    public var minos: UInt32 = 0
+    public var sdk: UInt32 = 0
+    public var ntools: UInt32 = 0
+
+    public init() {}
+}
+
+public struct version_min_command: Sendable {
+    public var cmd: UInt32 = 0
+    public var cmdsize: UInt32 = 0
+    public var version: UInt32 = 0
+    public var sdk: UInt32 = 0
+
+    public init() {}
+}
 #endif
 
 // MARK: - Mach-O String Parsing
@@ -522,7 +730,6 @@ fileprivate func parseMachONullTerminatedString(_ ptr: UnsafeRawBufferPointer) t
 extension UInt8: BinaryDataType{}
 extension UInt32: BinaryDataType{}
 
-#if canImport(Darwin)
 
 extension fat_header: BinaryDataType{}
 extension mach_header: BinaryDataType{}
@@ -540,11 +747,10 @@ extension build_version_command: BinaryDataType{}
 extension version_min_command: BinaryDataType{}
 extension rpath_command: BinaryDataType{}
 
-#if DONT_HAVE_LC_ATOM_INFO || SWIFT_PACKAGE
+#if DONT_HAVE_LC_ATOM_INFO || SWIFT_PACKAGE || !canImport(Darwin)
 fileprivate let LC_ATOM_INFO = (0x36)
 #endif
 
-#endif
 
 #if canImport(Darwin.ar)
 
@@ -594,7 +800,6 @@ public protocol MachOFatHeader {
     var structSize: Int { get }
 }
 
-#if canImport(Darwin)
 
 extension fat_arch: MachOFatHeader {
     public func offset(byteSwappedIfNeeded swap: Bool) -> UInt64 {
@@ -626,7 +831,6 @@ extension fat_arch_64: MachOFatHeader {
     }
 }
 
-#endif
 
 /// Provides a protocol to conform the 32 and 64 bit Mach-O headers together.
 public protocol MachOHeader {
@@ -644,7 +848,6 @@ public protocol MachOHeader {
     var structSize: Int { get }
 }
 
-#if canImport(Darwin)
 
 extension mach_header: MachOHeader {
     /// Returns the size, in bytes, of the `mach_header` struct.
@@ -659,7 +862,6 @@ extension mach_header_64: MachOHeader {
     }
 }
 
-#endif
 
 // MARK: -
 
@@ -687,7 +889,6 @@ public extension MachOSegmentLoadCommand {
     }
 }
 
-#if canImport(Darwin)
 
 extension segment_command: MachOSegmentLoadCommand {
     public var vmaddr64: UInt64 { return UInt64(self.vmaddr) }
@@ -711,7 +912,6 @@ extension segment_command_64: MachOSegmentLoadCommand {
     }
 }
 
-#endif
 
 // MARK: - Mach-O section information
 
@@ -737,7 +937,6 @@ extension MachOSection {
     }
 }
 
-#if canImport(Darwin)
 
 extension section: MachOSection {
     public var addr64: UInt64 {
@@ -759,7 +958,6 @@ extension section_64: MachOSection {
     }
 }
 
-#endif
 
 /// A representation of a Mach-O file. This type supports both thin and fat Mach-O files. In addition, if static archives are encountered, those will be unpacked here as well.
 public final class MachO {
@@ -901,16 +1099,11 @@ public final class MachO {
             init(reader: any BinaryReaderView) throws {
                 let magic: UInt32 = try reader.peek()
                 switch magic {
-                #if canImport(Darwin)
                 case MH_MAGIC, MH_CIGAM:
                     self = try .mach_header(reader.peek())
 
                 case MH_MAGIC_64, MH_CIGAM_64:
                     self = try .mach_header_64(reader.peek())
-                #else
-                case MH_MAGIC, MH_CIGAM, MH_MAGIC_64, MH_CIGAM_64:
-                    throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-                #endif
 
                 case UInt32(bigEndian: StaticArchive.ARMAG1):
                     let magic2: UInt32 = try reader.peek(offset: MemoryLayout<UInt32>.size)
@@ -925,35 +1118,26 @@ public final class MachO {
                 }
             }
 
-            #if canImport(Darwin)
             case mach_header(mach_header)
             case mach_header_64(mach_header_64)
-            #endif
         }
 
 
         var headers: [(Slice, any MachOHeader)] {
-            #if canImport(Darwin)
             switch self.header {
             case .mach_header(let x): return [(self, x)]
             case .mach_header_64(let x): return [(self, x)]
             }
-            #else
-            assertionFailure("not implemented")
-            return []
-            #endif
         }
 
         public var arch: String {
             precondition(headers.count <= 1, "invalid to call arch when there are multiple headers")
 
-            #if canImport(Darwin)
             if let (_, header) = headers.only {
                 if let name = Architecture.stringValue(cputype: header.cputype, cpusubtype: header.cpusubtype) {
                     return name
                 }
             }
-            #endif
 
             return "unknown"
         }
@@ -968,7 +1152,6 @@ public final class MachO {
 
         /// Return the names and linkage types of all linked libraries.
         public func linkedLibraries() throws -> [(pathStr: String, linkageType: LinkageType)] {
-            #if canImport(Darwin)
             return try loadCommands().compactMap { lc throws -> (String, LinkageType)? in
                 let cmd: dylib_command
                 let linkageType: LinkageType
@@ -1010,9 +1193,6 @@ public final class MachO {
                 }
                 return (pathStr, linkageType)
             }
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
         /// Return the names of all linked libraries.
@@ -1021,7 +1201,6 @@ public final class MachO {
         }
 
         public func installName() throws -> String? {
-            #if canImport(Darwin)
             let installNames = try loadCommands().compactMap { (lc: LoadCommand) throws -> String? in
                 switch lc.value {
                 case let .idDylib(cmd):
@@ -1045,26 +1224,20 @@ public final class MachO {
             }
 
             return installNames.only
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
         // rdar://92212555. Static binary is detected as dynamic instead of an object, causing it to get embedded into the framework
         // A simple fix is to create FileTypes 'object' and other valid, and check when providing slice linkage information.
         public var linkFileType: WrappedFileType {
             switch (header) {
-#if canImport(Darwin)
             case .mach_header(let header):
                 return .macho(FileType(rawValue: header.filetype))
             case .mach_header_64(let header):
                 return .macho(FileType(rawValue: header.filetype))
-#endif
             }
         }
 
         public func uuid() throws -> UUID? {
-            #if canImport(Darwin)
             let uuids = try loadCommands().compactMap { (lc: LoadCommand) throws -> UUID? in
                 switch lc.value {
                 case .uuid(let ulc): return UUID(uuid: ulc.uuid)
@@ -1075,12 +1248,8 @@ public final class MachO {
             guard !uuids.isEmpty else { return nil }
             guard uuids.count == 1 else { throw BinaryReaderError.parseError("Encountered multiple UUID load commands") }
             return uuids[0]
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
-        #if canImport(Darwin)
         public struct LoadCommand {
             let reader: BinaryReader
             let swap: Bool
@@ -1184,10 +1353,8 @@ public final class MachO {
                 }
             }.reduce([], { $0 + $1 })
         }
-        #endif
 
         public func rpaths() throws -> [String] {
-            #if canImport(Darwin)
             return try self.loadCommands().compactMap({ (lc: LoadCommand) -> String? in
                 guard case let .rpath(rpath) = lc.value else {
                     return nil
@@ -1206,12 +1373,8 @@ public final class MachO {
 
                 return String(bytes: data, encoding: .utf8)
             })
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
-        #if canImport(Darwin)
         public struct Segment {
             let loadCommand: LoadCommand
             let value: ConcreteValue
@@ -1281,10 +1444,8 @@ public final class MachO {
                 }
             }
         }
-        #endif
 
         public func buildVersions() throws -> [BuildVersion] {
-            #if canImport(Darwin)
             return try loadCommands().compactMap { loadCommand in
                 switch loadCommand.value {
                 case .build_version(let cmd):
@@ -1313,13 +1474,9 @@ public final class MachO {
                     return nil
                 }
             }
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
         public func containsAtomInfo() throws -> Bool {
-            #if canImport(Darwin)
             return try loadCommands().contains(where: { loadCommand in
                 switch loadCommand.value {
                 case .atom_info(_):
@@ -1328,12 +1485,8 @@ public final class MachO {
                     return false
                 }
             })
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
-        #if canImport(Darwin)
         private func sectionsMatching(_ segmentSectionNames: [(segmentName: String, sectionName: String)]) throws -> [(Bool, MachO.Slice.Segment.Section)] {
             let isObject = self.headers.allSatisfy { (slice, header) in return header.filetype == MH_OBJECT }
             return try self.segments().filter { (segment: Segment) throws -> Bool in
@@ -1351,10 +1504,8 @@ public final class MachO {
                 }.map { (segment.loadCommand.swap, $0) }
             }
         }
-        #endif
 
         public func swiftABIVersion() throws -> SwiftABIVersion? {
-            #if canImport(Darwin)
             // The Swift ABI version is in the ObjC image info section, which might be in either the __DATA, __DATA_CONST, or the __OBJC segment.
             let segmentSectionNames = [
                 ("__DATA", "__objc_imageinfo"),
@@ -1384,13 +1535,9 @@ public final class MachO {
 
             let vers = Int(swiftVersion)
             return vers < 7 ? .unstable(vers) : .stable(vers)
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
         public func simulatedEntitlements() throws -> PropertyListItem? {
-            #if canImport(Darwin)
             let sections = try sectionsMatching([("__TEXT", "__entitlements")])
 
             // We expect a single section, otherwise we bail
@@ -1403,13 +1550,9 @@ public final class MachO {
 
             let sectionReader = try reader.seek(by: Int(section.section.offset.byteSwappedIfNeeded(swap)))
             return try PropertyList.fromBytes(sectionReader.read(count: Int(section.section.size64)))
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
         public func simulatedDEREntitlements() throws -> [UInt8]? {
-            #if canImport(Darwin)
             let sections = try sectionsMatching([("__TEXT", "__ents_der")])
 
             // We expect a single section, otherwise we bail
@@ -1422,13 +1565,9 @@ public final class MachO {
 
             let sectionReader = try reader.seek(by: Int(section.section.offset.byteSwappedIfNeeded(swap)))
             return try sectionReader.read(count: Int(section.section.size64))
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
 
         public func remarks() throws -> Data? {
-            #if canImport(Darwin)
             let sections = try sectionsMatching([("__LLVM", "__remarks")])
 
             // We expect a single section, otherwise we bail
@@ -1441,9 +1580,6 @@ public final class MachO {
 
             let sectionReader = try reader.seek(by: Int(section.section.offset.byteSwappedIfNeeded(swap)))
             return Data(try sectionReader.read(count: Int(section.section.size64)))
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
     }
 }
@@ -1454,13 +1590,11 @@ extension MachO: Sendable { }
 @available(*, unavailable)
 extension MachO.Slice: Sendable { }
 
-#if canImport(Darwin)
 @available(*, unavailable)
 extension MachO.Slice.LoadCommand: Sendable { }
 
 @available(*, unavailable)
 extension MachO.Slice.Segment: Sendable { }
-#endif
 
 fileprivate extension Version {
     init(machOVersion v: UInt32) {
@@ -1630,7 +1764,6 @@ extension ar_hdr {
 
 extension Array where Element == any MachOFatHeader {
     init(reader: BinaryReader) throws {
-        #if canImport(Darwin)
         let fh: fat_header = try reader.read()
         let swap = shouldSwap(magic: fh.magic)
         let nfat_arch = fh.nfat_arch.byteSwappedIfNeeded(swap)
@@ -1664,9 +1797,6 @@ extension Array where Element == any MachOFatHeader {
         }
 
         self = archs
-        #else
-        throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-        #endif
     }
 }
 
@@ -1675,7 +1805,6 @@ extension MachO.Slice {
     /// Returns `true` if this slice contains a `__swift5_entry` text section.
     public var containsSwift5EntrySection: Bool {
         get throws {
-            #if canImport(Darwin)
             for segment in try segments() {
                 for section in try segment.sections() {
                     let segname = try section.section.segname()
@@ -1688,9 +1817,6 @@ extension MachO.Slice {
                 }
             }
             return false
-            #else
-            throw BinaryReaderError.parseError("Mach-O parsing not supported on this platform")
-            #endif
         }
     }
 

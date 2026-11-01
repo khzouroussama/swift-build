@@ -128,7 +128,25 @@ public struct Architecture: Sendable {
         }
         return nil
         #else
-        return nil
+        // The names macho_arch_name_for_cpu_type gives on Darwin, which ignores the subtype's capability bits.
+        switch (UInt32(bitPattern: cputype), UInt32(bitPattern: cpusubtype) & 0x00ff_ffff) {
+        case (0x0000_0007, 3): return "i386"
+        case (0x0100_0007, 3): return "x86_64"
+        case (0x0100_0007, 8): return "x86_64h"
+        case (0x0000_000c, 6): return "armv6"
+        case (0x0000_000c, 9): return "armv7"
+        case (0x0000_000c, 11): return "armv7s"
+        case (0x0000_000c, 12): return "armv7k"
+        case (0x0000_000c, 14): return "armv6m"
+        case (0x0000_000c, 15): return "armv7m"
+        case (0x0000_000c, 16): return "armv7em"
+        case (0x0100_000c, 0), (0x0100_000c, 1): return "arm64"
+        case (0x0100_000c, 2): return "arm64e"
+        case (0x0100_000c, 12): return "arm64e.x1"
+        case (0x0200_000c, 0), (0x0200_000c, 1): return "arm64_32"
+        case (0x0000_0012, 0): return "ppc"
+        default: return nil
+        }
         #endif
     }
 }

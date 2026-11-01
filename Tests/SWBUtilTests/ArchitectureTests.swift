@@ -12,7 +12,7 @@
 
 import Foundation
 import Testing
-import SWBUtil
+@testable import SWBUtil
 import SWBTestSupport
 
 @Suite fileprivate struct ArchitectureTests {
@@ -40,5 +40,17 @@ import SWBTestSupport
         #expect(Architecture.hostStringValue == "x86_64")
         #endif
         #endif
+    }
+
+    @Test func namesOfCPUTypesAndSubtypes() {
+        let names: [(UInt32, UInt32, String?)] = [
+            (0x0000_0007, 3, "i386"), (0x0100_0007, 3, "x86_64"), (0x0100_0007, 8, "x86_64h"), (0x0000_0007, 8, nil),
+            (0x0000_000c, 9, "armv7"), (0x0000_000c, 11, "armv7s"), (0x0000_000c, 12, "armv7k"), (0x0000_000c, 0, nil),
+            (0x0100_000c, 0, "arm64"), (0x0100_000c, 1, "arm64"), (0x0100_000c, 2, "arm64e"), (0x0100_000c, 0x8000_0002, "arm64e"),
+            (0x0100_000c, 0x8100_0002, "arm64e"), (0x0100_000c, 12, "arm64e.x1"), (0x0200_000c, 1, "arm64_32"), (0x0100_0012, 0, nil),
+        ]
+        for (cputype, cpusubtype, name) in names {
+            #expect(Architecture.stringValue(cputype: cpu_type_t(bitPattern: cputype), cpusubtype: cpu_subtype_t(bitPattern: cpusubtype)) == name)
+        }
     }
 }

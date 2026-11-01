@@ -405,6 +405,21 @@ import SystemPackage
     }
 
     @Test
+    func localListingsLeaveOutAppleDoubleFiles() throws {
+        try withTemporaryDirectory { tmpDir in
+            try localFS.write(tmpDir.join("a"), contents: [])
+            try localFS.write(tmpDir.join("._a"), contents: [])
+            try localFS.write(tmpDir.join("._orphan"), contents: [])
+            try localFS.createDirectory(tmpDir.join("b"))
+            try localFS.write(tmpDir.join("b/._c"), contents: [])
+            try localFS.createDirectory(tmpDir.join("._d"))
+
+            #expect(Set(try localFS.listdir(tmpDir)) == ["a", "b", "._d"])
+            #expect(Set(try localFS.traverse(tmpDir) { $0 }) == Set([tmpDir.join("a"), tmpDir.join("b"), tmpDir.join("._d")]))
+        }
+    }
+
+    @Test
     func localSymlinks() throws {
         try withTemporaryDirectory { (tmpDir: Path) in
             let realTmpPath = try localFS.realpath(tmpDir)

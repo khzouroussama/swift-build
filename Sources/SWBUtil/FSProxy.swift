@@ -412,7 +412,17 @@ class LocalFS: FSProxy, @unchecked Sendable {
     }
 
     func listdir(_ path: Path) throws -> [String] {
+        #if canImport(Darwin)
         return try fileManager.contentsOfDirectory(atPath: path.str)
+        #else
+        return try fileManager.contentsOfDirectory(atPath: path.str).filter { !isAppleDoubleFile(path.join($0)) }
+        #endif
+    }
+
+    /// Foundation on Darwin leaves files named `._*` (AppleDouble files, but not directories) out of
+    /// `contentsOfDirectory(atPath:)` and `enumerator(atPath:)`; Foundation elsewhere lists them.
+    private func isAppleDoubleFile(_ path: Path) -> Bool {
+        path.basename.hasPrefix("._") && !isDirectory(path)
     }
 
     /// Creates a directory at the given path.  Throws an exception if it cannot do so.
@@ -639,6 +649,9 @@ class LocalFS: FSProxy, @unchecked Sendable {
             var next = (next as? String)
             next?.makeContiguousUTF8()
             let nextPath = path.join(next)
+            #if !canImport(Darwin)
+            if isAppleDoubleFile(nextPath) { return nil }
+            #endif
             return try f(nextPath)
         }
     }

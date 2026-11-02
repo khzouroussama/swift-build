@@ -511,6 +511,22 @@ fileprivate let LC_LOAD_UPWARD_DYLIB: UInt32 = 0x8000_0023
 
 public typealias MachOName = (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar)
 
+// The header of a static archive's member and the strings this file reads, as <ar.h> declares them.
+fileprivate let SARMAG: Int32 = 8
+fileprivate let AR_EFMT1 = "#1/"
+
+public struct ar_hdr: Sendable {
+    public var ar_name: MachOName = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var ar_date: (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar) = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var ar_uid: (CChar, CChar, CChar, CChar, CChar, CChar) = (0, 0, 0, 0, 0, 0)
+    public var ar_gid: (CChar, CChar, CChar, CChar, CChar, CChar) = (0, 0, 0, 0, 0, 0)
+    public var ar_mode: (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar) = (0, 0, 0, 0, 0, 0, 0, 0)
+    public var ar_size: (CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar, CChar) = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    public var ar_fmag: (CChar, CChar) = (0, 0)
+
+    public init() {}
+}
+
 public struct fat_header: Sendable {
     public var magic: UInt32 = 0
     public var nfat_arch: UInt32 = 0
@@ -752,7 +768,7 @@ fileprivate let LC_ATOM_INFO = (0x36)
 #endif
 
 
-#if canImport(Darwin.ar)
+#if canImport(Darwin.ar) || !canImport(Darwin)
 
 extension ar_hdr: BinaryDataType{}
 
@@ -1665,7 +1681,7 @@ fileprivate extension Version {
     public func machOs() throws -> [MachO] {
         switch archiveType {
         case .thin:
-            #if canImport(Darwin.ar)
+            #if canImport(Darwin.ar) || !canImport(Darwin)
             // The magic bytes '!<arch>\n' has already been established, so skip past that.
             try self.reader.seek(by: Int(SARMAG))
 
@@ -1726,7 +1742,7 @@ fileprivate extension Version {
 @available(*, unavailable)
 extension StaticArchive: Sendable { }
 
-#if canImport(Darwin.ar)
+#if canImport(Darwin.ar) || !canImport(Darwin)
 extension ar_hdr {
     public var rawArchiveName: String? {
         var tmp = ar_name

@@ -50,4 +50,37 @@ import Testing
         #expect(try slice.buildVersions().map(\.platform) == [.iOS])
         #expect(try slice.segments().count == 1)
     }
+
+    /// A universal static library of two slices, each an archive with a symbol table and one
+    /// object, its name in the extended format (`#1/<length>`), as libtool writes them.
+    static func universalStaticLibrary() -> [UInt8] {
+        func header(_ name: String, size: Int) -> [UInt8] {
+            func field(_ value: String, _ width: Int) -> [UInt8] { Array(value.utf8) + Array(repeating: 0x20, count: width - value.utf8.count) }
+            return field(name, 16) + field("0", 12) + field("0", 6) + field("0", 6) + field("100644", 8) + field(String(size), 10) + Array("`\n".utf8)
+        }
+        var object: [UInt8] = []
+        func u32(_ value: UInt32) { withUnsafeBytes(of: value.littleEndian) { object += $0 } }
+        u32(0xfeedfacf); u32(0x0100_000c); u32(0); u32(0x1); u32(0); u32(0); u32(0); u32(0)
+        let name = Array("Basics.o".utf8) + [0, 0, 0, 0]
+        let symbols = Array("__.SYMDEF\0\0\0".utf8) + Array(repeating: 0, count: 8)
+        let archive = Array("!<arch>\n".utf8) + header("#1/12", size: 12 + 8) + Array(symbols.prefix(20))
+            + header("#1/\(name.count)", size: name.count + object.count) + name + object
+        var bytes: [UInt8] = []
+        func be(_ value: UInt32) { withUnsafeBytes(of: value.bigEndian) { bytes += $0 } }
+        be(0xcafebabe); be(2)
+        let first = 4096
+        let second = first + ((archive.count + 4095) / 4096) * 4096
+        be(0x0100_000c); be(0); be(UInt32(first)); be(UInt32(archive.count)); be(12)
+        be(12); be(9); be(UInt32(second)); be(UInt32(archive.count)); be(12)
+        bytes += Array(repeating: 0, count: first - bytes.count) + archive
+        bytes += Array(repeating: 0, count: second - bytes.count) + archive
+        return bytes
+    }
+
+    @Test
+    func universalStaticLibraryOfArchives() throws {
+        let (slices, linkage) = try MachO(data: ByteString(Self.universalStaticLibrary())).slicesIncludingLinkage()
+        #expect(linkage == .static)
+        #expect(slices.count == 2)
+    }
 }

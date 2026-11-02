@@ -170,8 +170,7 @@ final class SwiftPackageCopyFilesTaskProducer: CopyFilesTaskProducer {
                 if case .targetProduct(let guid) = firstBuildFile.buildableItem, let _target = context.workspaceContext.workspace.target(for: guid)  {
                     target = _target
                 } else {
-                    // If this isn't a target product reference, it has to be a `binaryTarget` which does not support platform filters by definition, so we can return the first build file instead.
-                    assert(aggregatedPlatformFilters.isEmpty)
+                    // If this isn't a target product reference, it has to be a `binaryTarget`, whose build files are embedded on every platform: the first one stands for them. A project's build file of a binary target can still have platform filters (its Frameworks phase sets them), which are not applied here.
                     return firstBuildFile
                 }
 

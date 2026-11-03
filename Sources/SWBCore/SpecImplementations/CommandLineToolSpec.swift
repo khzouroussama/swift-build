@@ -253,7 +253,9 @@ extension DiscoveredCommandLineToolSpecInfo {
         if !toolPath.isAbsolute {
             throw StubError.error("\(toolPath.str) is not absolute")
         }
-        return try await producer.discoveredCommandLineToolSpecInfo(delegate, toolPath.basename, ["/usr/bin/what", "-q", toolPath.str]) { executionResult in
+        // what ships with macOS; elsewhere it is looked up through the tool search paths, like the other tools.
+        let what = producer.hostOperatingSystem == .macOS ? Path("/usr/bin/what") : producer.executableSearchPaths.lookup(Path("what")) ?? Path("what")
+        return try await producer.discoveredCommandLineToolSpecInfo(delegate, toolPath.basename, [what.str, "-q", toolPath.str]) { executionResult in
             let outputString = String(decoding: executionResult.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
             let lines = Set(outputString.split(separator: "\n").map(String.init)) // version info is printed once per architecture slice, but we never expect them to differ
             let versionInfo: AppleGenericVersionInfo

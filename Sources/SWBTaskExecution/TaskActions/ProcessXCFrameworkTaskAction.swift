@@ -155,6 +155,12 @@ public final class ProcessXCFrameworkTaskAction: TaskAction {
             // Codesign verification is always run, regardless of the expected signatures. If this fails, then builds should not be able to continue.
             try await CodeSignatureInfo.invokeCodesignVerification(for: path.str, treatUnsignedAsError: false)
 
+            #if !os(macOS)
+            if let info = try? await CodeSignatureInfo.load(from: path.str, additionalInfo: nil), info.isSigned {
+                outputDelegate.emit(Diagnostic(behavior: .warning, location: location, data: DiagnosticData("The signature of “\(path.basename)” was read but not verified: without `codesign`, its sealed resources and certificates are not checked.")))
+            }
+            #endif
+
             // No validation is performed if there are no expected signatures.
             if expectedSignatures.isEmpty {
                 // If the asset is signed, and there are no expectations in the project, we issue a note, which is used to record the signing identity.
